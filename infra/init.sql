@@ -1,0 +1,5 @@
+-- Placeholder for PostgreSQL initialization SQL
+-- Example:
+-- CREATE DATABASE notification_db;
+-- CREATE USER user WITH PASSWORD 'password';
+-- GRANT ALL PRIVILEGES ON DATABASE notification_db TO user;

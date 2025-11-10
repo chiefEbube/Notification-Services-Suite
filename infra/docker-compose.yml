@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+  postgres:
+    image: postgres:13-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  api_gateway:
+    build: ./api_gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user_service
+      - email_service
+      - push_service
+      - template_service
+  user_service:
+    build: ./user_service
+    depends_on:
+      - postgres
+      - rabbitmq
+  email_service:
+    build: ./email_service
+    depends_on:
+      - rabbitmq
+  push_service:
+    build: ./push_service
+    depends_on:
+      - rabbitmq
+  template_service:
+    build: ./template_service
+    depends_on:
+      - rabbitmq
