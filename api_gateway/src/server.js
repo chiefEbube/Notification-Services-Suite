@@ -3,26 +3,26 @@ const fastify = require('fastify');
 const config = require('../config/config');
 const cors = require('@fastify/cors');
 const helmet = require('@fastify/helmet');
-const correlationIdMiddleware = require('../middlewares/correlation.middleware');
 const { logger, loggerMiddleware } = require('../middlewares/logger.middleware');
+const correlationIdPlugin = require('../middlewares/correlation.middleware');
 const routes = require('./routes/index');
 
 const buildServer = () => {
     const app = fastify({
         logger: logger,
-        genReqId: (req) => req.headers['x-correlation-id'] || require('uuid').v4(),
+        genReqId: (req) => req.headers[config.CORRELATION_ID_HEADER] || require('uuid').v4(),
     });
 
     // Register plugins
     app.register(cors, {
         origin: '*', // Adjust as per your CORS policy
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID'],
+        allowedHeaders: ['Content-Type', 'Authorization', config.CORRELATION_ID_HEADER],
     });
     app.register(helmet);
 
     // Register custom middlewares
-    app.addHook('onRequest', correlationIdMiddleware);
+    app.register(correlationIdPlugin); // Register as a plugin
     app.addHook('onRequest', loggerMiddleware);
 
     // Register routes
