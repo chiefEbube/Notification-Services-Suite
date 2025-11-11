@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { SendgridService } from 'src/sendgrid/sendgrid.service';
+import * as Handlebars from 'handlebars';
 
 @Injectable()
 export class EmailService {
@@ -34,12 +35,8 @@ export class EmailService {
             const templateResponse = await firstValueFrom(this.httpService.get(`${this.templateServiceUrl}/api/v1templates/${jobData.template_code}`,));
             const htmlTemplate = templateResponse.data.html // Assuming the template service returns the HTML string in data
 
-            // To Do: Implement with Handlebars
-
-            let finalHtml = htmlTemplate.replace(/{{name}}/g, jobData.variables.name);
-            finalHtml = finalHtml.replace(/{{link}}/g, jobData.variables.link);
-
-            // To return to this
+            const template = Handlebars.compile(htmlTemplate);
+            const finalHtml = template(jobData.variables);
 
             await this.sendgridService.sendEmail({
                 to: user.email,
