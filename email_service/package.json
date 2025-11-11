@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
+    "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -29,7 +30,9 @@
     "@sendgrid/mail": "^8.1.6",
     "amqplib": "^0.10.9",
     "axios": "^1.13.2",
+    "cache-manager-redis-store": "^3.0.1",
     "handlebars": "^4.7.8",
+    "opossum": "^9.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -43,6 +46,7 @@
     "@types/handlebars": "^4.0.40",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
+    "@types/opossum": "^8.1.9",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
