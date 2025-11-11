@@ -12,6 +12,8 @@ export class EmailService {
     private userServiceUrl: string;
     private templateServiceUrl: string;
 
+    private sendgridFromEmail: string;
+
     private userServiceBreaker: Opossum;
     private templateServiceBreaker: Opossum;
 
@@ -20,9 +22,11 @@ export class EmailService {
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
         private readonly sendgridService: SendgridService,
+        
     ) {
         this.userServiceUrl = this.configService.getOrThrow<string>('USER_SERVICE_URL');
         this.templateServiceUrl = this.configService.getOrThrow<string>('TEMPLATE_SERVICE_URL');
+        this.sendgridFromEmail = this.configService.getOrThrow<string>('SENDGRID_FROM_EMAIL')
 
         const breakerOptions = {
             timeout: 5000,
@@ -52,12 +56,11 @@ export class EmailService {
             if (!user) {
                 console.log(`Cache miss for key: ${cacheKey}`);
 
-                const userResponse = await firstValueFrom(this.httpService.get(`${this.userServiceUrl}/api/v1/users/${jobData.user_id}`,),);
-                
+                const userResponse: any = await this.userServiceBreaker.fire(jobData.user_id,);
                 user = userResponse.data.data;
                 await this.cache.set(cacheKey, user);
             } else {
-                console.log(`Cache hit for key: ${cacheKey}`);
+                console.log(`Cache hit for key: ${cacheKey}`);              
             }
 
             if (!user.preferences || user.preferences.email === false) {
@@ -70,8 +73,7 @@ export class EmailService {
 
             if (!htmlTemplate) {
                 console.log(`Cache miss for key: ${templateCacheKey}`);
-                const templateResponse: any =
-                  await this.templateServiceBreaker.fire(jobData.template_code);
+                const templateResponse: any = await this.templateServiceBreaker.fire(jobData.template_code);
         
                 htmlTemplate = templateResponse.data.html; // Assuming this structure isfrom the template service
                 await this.cache.set(templateCacheKey, htmlTemplate);
@@ -84,7 +86,7 @@ export class EmailService {
 
             await this.sendgridService.sendEmail({
                 to: user.email,
-                from: '', // sendGrid sender
+                from: this.sendgridFromEmail,
                 subject: 'Test Email', // To Do: Use the template subject
                 html: finalHtml,
             })
