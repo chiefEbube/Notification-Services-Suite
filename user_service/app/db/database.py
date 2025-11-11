@@ -6,7 +6,9 @@ from app.core.config import settings
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
-    echo=settings.DEBUG
+    pool_size=10,
+    max_overflow=20,
+    echo=False
     )
 
 SessionLocal = sessionmaker(
@@ -27,3 +29,4 @@ def get_db():
 def init_db():
     from app.models import user
     Base.metadata.create_all(bind=engine)
+    print("tables created")

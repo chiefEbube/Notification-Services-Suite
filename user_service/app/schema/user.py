@@ -4,12 +4,12 @@ from datetime import datetime
 import uuid
 
 class UserPreference(BaseModel):
-    email: bool
-    push: bool 
+    email: bool = True
+    push: bool = True
 
 class UserPreferenceResponse(UserPreference):
-    id: str
-    user_id: str
+    id: uuid.UUID
+    user_id: uuid.UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -23,6 +23,9 @@ class UserCreate(BaseModel):
     push_token: Optional[str] = None
     preferences: UserPreference
     password: str
+    
+    
+    
 
     @field_validator('password')
     def password_strength(cls, p):
@@ -31,21 +34,33 @@ class UserCreate(BaseModel):
         return p
     
 class UserUpdate(BaseModel):
-    push_token: Any
+    push_token: Optional[str] = None
 
     
 class UserResponse(BaseModel):
-    id: str
+    id: uuid.UUID
     name: str
     email: EmailStr
     push_token: Optional[str] = None
-    preferences: UserPreferenceResponse
     created_at: datetime
     updated_at: Optional[datetime] = None
+    preferences: UserPreferenceResponse
 
     class Config:
         from_attributes = True
 
 
+class PasswordVerify(BaseModel):
+    email: EmailStr
+    password: str
 
 
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator('new_password')
+    def password_strength(cls, np):
+        if len(np) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return np
