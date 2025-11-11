@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HttpModule } from '@nestjs/axios';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SendgridModule } from './sendgrid/sendgrid.module';
 import { EmailModule } from './email/email.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
+
 
 @Module({
   imports: [
@@ -12,6 +15,16 @@ import { EmailModule } from './email/email.module';
       isGlobal: true,
     }),
     HttpModule,
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        store: redisStore,
+        url: configService.getOrThrow<string>('REDIS_URL'),
+        ttl: 3600,
+      }),
+    }),
     SendgridModule,
     EmailModule,
   ],
