@@ -4,14 +4,13 @@ import { ConfigService } from '@nestjs/config';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-  const tempApp = await NestFactory.createApplicationContext(AppModule);
-  const configService = tempApp.get(ConfigService)
+  const app = await NestFactory.create(AppModule);
 
+  const configService = app.get(ConfigService)
   const rabbitMqUrl = configService.getOrThrow<string>('RABBITMQ_URL');
+  const port = configService.getOrThrow<number>('PORT');
 
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    AppModule,
-    {
+  app.connectMicroservice<MicroserviceOptions>({
       transport: Transport.RMQ,
       options: {
         urls: [rabbitMqUrl],
@@ -24,7 +23,10 @@ async function bootstrap() {
     }
   );
 
-  await app.listen();
+  await app.startAllMicroservices();
+  await app.listen(port);
+
+  console.log(`Email service HTTP server listening on port ${port}`);
   console.log('Email service is listening for messages...');
 }
 bootstrap();

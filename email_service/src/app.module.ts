@@ -7,6 +7,7 @@ import { SendgridModule } from './sendgrid/sendgrid.module';
 import { EmailModule } from './email/email.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
+import { TerminusModule } from '@nestjs/terminus';
 
 
 @Module({
@@ -15,6 +16,7 @@ import { redisStore } from 'cache-manager-redis-store';
       isGlobal: true,
     }),
     HttpModule,
+    TerminusModule,
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
