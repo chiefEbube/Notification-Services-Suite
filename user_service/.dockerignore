@@ -1,0 +1,14 @@
+.git/
+__pycache__/
+*.pyc
+.venv/
+.env
+.vscode/
+.idea/
+.DS_Store
+logs/
+*.log
+Dockerfile
+.dockerignore
+test/
+tests/
