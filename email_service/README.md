@@ -52,11 +52,6 @@ The Email Service primarily communicates asynchronously by consuming messages fr
 |     (Node.js)     |
 +---------+---------+
           |
-          | HTTP/S (Template Service)
-          v
-+-------------------+
-| Template Service  |
-+-------------------+
           |
           | External Email Provider
           v
