@@ -3,7 +3,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { SendgridService } from '../sendgrid/sendgrid.service';
-import * as Handlebars from 'handlebars';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import Opossum from 'opossum'
 
@@ -68,27 +67,35 @@ export class EmailService {
                 return true;
             }
 
-            const templateCacheKey = `template:${jobData.template_code}`;
-            let htmlTemplate = await this.cache.get<string>(templateCacheKey);
+            const templateCacheKey = `template:${jobData.template_id}`;
+            let templateContent = await this.cache.get<string>(templateCacheKey);
 
-            if (!htmlTemplate) {
+            if (!templateContent) {
                 console.log(`Cache miss for key: ${templateCacheKey}`);
-                const templateResponse: any = await this.templateServiceBreaker.fire(jobData.template_code);
-        
-                htmlTemplate = templateResponse.data.html; // Assuming this structure isfrom the template service
-                await this.cache.set(templateCacheKey, htmlTemplate);
+                const templateResponse: any = await this.templateServiceBreaker.fire(jobData.template_id);
+    
+                templateContent = templateResponse.data.data.content;
+                if (!templateContent) {
+                    throw new Error(`Template content not found for template_id: ${jobData.template_id}`);
+                }
+                await this.cache.set(templateCacheKey, templateContent);
               } else {
                 console.log(`Cache hit for key: ${templateCacheKey}`);
               }
 
-            const template = Handlebars.compile(htmlTemplate);
-            const finalHtml = template(jobData.variables);
+            let finalContent = templateContent;
+            if (jobData.variables) {
+                Object.keys(jobData.variables).forEach(key => {
+                    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+                    finalContent = finalContent.replace(regex, String(jobData.variables[key]));
+                });
+            }
 
             await this.sendgridService.sendEmail({
                 to: user.email,
                 from: this.sendgridFromEmail,
-                subject: 'Test Email', // To Do: Use the template subject
-                html: finalHtml,
+                subject: 'Test Email',
+                html: finalContent,
             })
 
             console.log('Job completed successfully: ', jobData.request_id);
