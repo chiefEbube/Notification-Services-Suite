@@ -49,7 +49,7 @@ export class EmailService {
         console.log('Received email job:', jobData.request_id);
 
         try {
-            // Fetch user details
+            // Fetch user details from cache or user service
             const cacheKey = `user:${jobData.user_id}`;
             let user = await this.cache.get<any>(cacheKey);
 
