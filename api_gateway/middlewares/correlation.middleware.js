@@ -1,7 +1,7 @@
 // api_gateway/middlewares/correlation.middleware.js
-const fp = require('fastify-plugin');
-const { v4: uuidv4 } = require('uuid');
-const config = require('../config/config');
+import fp from 'fastify-plugin';
+import { v4 as uuidv4 } from 'uuid';
+import config from '../config/config.js';
 
 async function correlationIdMiddleware(fastify, options) {
     fastify.addHook('onRequest', (request, reply, done) => {
@@ -15,4 +15,4 @@ async function correlationIdMiddleware(fastify, options) {
     });
 }
 
-module.exports = fp(correlationIdMiddleware);
+export default fp(correlationIdMiddleware);

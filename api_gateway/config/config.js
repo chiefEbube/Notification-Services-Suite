@@ -12,6 +12,7 @@ const config = {
     LOG_LEVEL: process.env.LOG_LEVEL || 'info',
     REQUEST_TIMEOUT_MS: parseInt(process.env.REQUEST_TIMEOUT_MS || '5000', 10),
     CORRELATION_ID_HEADER: process.env.CORRELATION_ID_HEADER || 'x-correlation-id',
+    REDIS_URL: process.env.REDIS_URL || 'redis://redis:6379', // Add Redis URL
 };
 
 module.exports = config;

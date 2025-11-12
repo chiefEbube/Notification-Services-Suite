@@ -7,6 +7,8 @@ const loggerPlugin = require('../middlewares/logger.middleware');
 const correlationIdPlugin = require('../middlewares/correlation.middleware');
 const authPlugin = require('../middlewares/auth.middleware');
 const { connectRabbitMQ } = require('../services/rabbitmq.service'); // Import RabbitMQ connection
+const rateLimit = require('@fastify/rate-limit'); // Import rate-limit plugin
+const Redis = require('ioredis'); // Import ioredis
 const routes = require('./routes/index');
 
 const buildServer = () => {
@@ -29,6 +31,15 @@ const buildServer = () => {
         genReqId: (req) => req.headers[config.CORRELATION_ID_HEADER] || require('uuid').v4(),
     });
 
+    // Initialize Redis client
+    const redis = new Redis(config.REDIS_URL);
+    app.decorate('redis', redis); // Decorate Fastify instance with Redis client
+
+    app.addHook('onClose', async (instance) => {
+        await instance.redis.quit();
+        instance.log.info('Redis client disconnected.');
+    });
+
     // Register plugins
     app.register(cors, {
         origin: '*', // Adjust as per your CORS policy
@@ -36,6 +47,24 @@ const buildServer = () => {
         allowedHeaders: ['Content-Type', 'Authorization', config.CORRELATION_ID_HEADER],
     });
     app.register(helmet);
+
+    // Register rate limiting
+    app.register(rateLimit, {
+        max: 100, // Max requests per window
+        timeWindow: '1 minute', // Time window for rate limiting
+        errorResponseBuilder: (request, context) => {
+            return {
+                success: false,
+                message: 'Too many requests',
+                error: 'Rate Limit Exceeded',
+                meta: {
+                    limit: context.max,
+                    current: context.current,
+                    remaining: context.ttl,
+                },
+            };
+        },
+    });
 
     // Register custom middlewares
     app.register(correlationIdPlugin); // Register as a plugin
