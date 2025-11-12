@@ -21,4 +21,3 @@ RUN npm ci --omit=dev
 COPY --from=builder /usr/src/app/dist ./dist
 
 CMD [ "node", "dist/main" ]
-# CMD ["sleep", "infinity"]
