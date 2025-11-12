@@ -46,7 +46,7 @@ def handle_api_exceptions(func):
                 content=for_error_responses("Internal server error", f"An unexpected error occurred: {str(e)}").model_dump())
     return wrapper
 
-@router.post("/create-user", response_model=APIResponse, status_code=201)
+@router.post("/", response_model=APIResponse, status_code=201)
 @handle_api_exceptions
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     new_user = UserService.create_user(db, user)
