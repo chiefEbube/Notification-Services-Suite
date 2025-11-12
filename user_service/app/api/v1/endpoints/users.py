@@ -105,7 +105,7 @@ def get_user_preferences(user_id: str, db: Session = Depends(get_db)):
         message="User preferences retrieved successfully."
     )
 
-@router.put("/{user_id}/preferences", response_model=APIResponse)
+@router.put("/preferences/{user_id}", response_model=APIResponse)
 @handle_api_exceptions
 def update_user_preferences(user_id: str, preferences: UserPreference, db: Session = Depends(get_db)):
     updated_preference = UserService.update_user_preference(db, user_id, preferences)

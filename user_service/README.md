@@ -9,14 +9,10 @@ The User Service is responsible for managing all user-related data and operation
 
 ## The responsibilities of the service
 - **User Registration**: Handles the creation of new user accounts.
-- **User Authentication**: Verifies user credentials (e.g., login) and issues authentication tokens.
-- **User Authorization**: Manages user roles and permissions.
 - **User Profile Management**: Allows users to view and update their profile information.
 - **User Data Storage**: Persists user data in a database.
 - **Password Management**: Securely stores and manages user passwords.
 
-## The message queue (RabbitMQ/Kafka) interactions
-The User Service will act as a **producer** to RabbitMQ. It will publish events related to user activities (e.g., `user.created`, `user.updated`, `user.deleted`) to a `user_events` exchange, which other services can consume.
 
 ## The environment variables required (based on .env.example)
 - `DATABASE_URL`: Connection string for the PostgreSQL database (e.g., `postgresql://user:password@postgres:5432/notification_db`)
@@ -27,18 +23,56 @@ The User Service will act as a **producer** to RabbitMQ. It will publish events 
 - `JWT_SECRET`: Secret key for generating and validating JWT tokens.
 
 ## The endpoints the service will expose (just list them, no code)
-- `POST /register`
-- `POST /login`
-- `GET /users/{id}`
-- `PUT /users/{id}`
-- `DELETE /users/{id}`
-- `GET /users/me` (for authenticated user profile)
+- `POST /api/v1/users/create-user`
+- `GET /api/v1/users/{user_id}`
+- `DELETE /api/v1/users/{user_id}`
+- `GET /api/v1/users/email/{email}`
+- `PUT /api/v1/users/update-push-token/{user_id}`
+- `GET /api/v1/users/preferences/{user_id}`
+- `PUT /api/v1/users/preferences/{user_id}`
+- `POST /api/v1/users/verify-password`
+- `PUT /api/v1/users/update-password/{user_id}`
+- `GET /api/v1/users/all/users`
 
-## How this service communicates with others (REST or MQ)
-The User Service exposes its functionalities via **REST APIs** for the API Gateway. It communicates asynchronously with other services by publishing events to **RabbitMQ**.
+## For Other Services
+
+### How to Use This Service
+
+**From API Gateway (Node.js example):**
+```javascript
+// Create user
+const response = await fetch('http://user-service:3001/api/v1/users/', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: "John",
+    email: "john@example.com",
+    password: "secure123",
+    preferences: { email: true, push: true }
+  })
+});
+
+// Get user
+const user = await fetch('http://user-service:3001/api/v1/users/USER_ID');
+
+// Verify password (for login)
+const verified = await fetch('http://user-service:3001/api/v1/users/verify-password', {
+  method: 'POST',
+  body: JSON.stringify({
+    email: "john@example.com",
+    password: "secure123"
+  })
+});
+```
 
 ## A small architecture diagram (ASCII style)
 ```
++-------------------+
+|  Client Request   |
++---------+---------+
+          |
+          | 
+          v
 +-------------------+
 |    API Gateway    |
 +---------+---------+
@@ -52,12 +86,7 @@ The User Service exposes its functionalities via **REST APIs** for the API Gatew
           |
           | DB Connection
           v
-+-------------------+
-|    PostgreSQL     |
-+-------------------+
-          |
-          | MQ (Producer)
-          v
-+-------------------+
-|     RabbitMQ      |
-+-------------------+
++---------------------------+
+|    PostgreSQL  or Redis   |
++---------------------------+
+         
