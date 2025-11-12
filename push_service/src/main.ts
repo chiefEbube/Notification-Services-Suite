@@ -8,7 +8,7 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const rabbitMqUrl = configService.getOrThrow<string>('RABBITMQ_URL');
-  const port = configService.getOrThrow<number>('PORT');
+  const port = configService.getOrThrow('PORT');
 
   // Connect to RabbitMQ microservice
   app.connectMicroservice<MicroserviceOptions>({
