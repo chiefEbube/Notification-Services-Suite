@@ -1,4 +1,4 @@
-FROM node:18-alpine AS builder
+FROM alpine
 
 WORKDIR /usr/src/app
 
@@ -21,3 +21,4 @@ RUN npm ci --omit=dev
 COPY --from=builder /usr/src/app/dist ./dist
 
 CMD [ "node", "dist/main" ]
+# CMD ["sleep", "infinity"]

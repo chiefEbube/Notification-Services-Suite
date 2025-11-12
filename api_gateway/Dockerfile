@@ -5,13 +5,13 @@ FROM node:18-alpine
 WORKDIR /app/api_gateway
 
 # Copy package.json and package-lock.json (if any)
-COPY api_gateway/package*.json ./
+COPY package*.json ./
 
 # Install app dependencies
 RUN npm install
 
 # Copy the rest of the application code
-COPY api_gateway/ .
+COPY . .
 
 # Expose the port the app runs on
 EXPOSE 8080

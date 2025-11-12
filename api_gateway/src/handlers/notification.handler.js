@@ -1,5 +1,5 @@
 // api_gateway/src/handlers/notification.handler.js
-const { sendToQueue } = require('../../services/rabbitmq.service');
+const { publishToQueue } = require('../utils/publisher'); // Use the new publisher utility
 const config = require('../../config/config');
 const { successResponse, errorResponse } = require('../utils/response');
 
@@ -88,12 +88,17 @@ async function sendNotification(request, reply) {
         log.info({ template_id, templateData }, 'Mock template data fetched successfully');
 
 
-        // 4. Choose queue based on notification_type
-        let queueName;
+        // 4. Determine routing key based on notification_type
+        let routingKey;
         if (notification_type === 'email') {
-            queueName = config.EMAIL_QUEUE_NAME;
-        } else { // notification_type === 'push'
-            queueName = config.PUSH_QUEUE_NAME;
+            routingKey = 'email';
+        } else if (notification_type === 'push') {
+            routingKey = 'push';
+        } else {
+            return reply.code(400).send(errorResponse(
+                'Bad Request',
+                'Invalid notification_type. Must be "email" or "push".'
+            ));
         }
 
         const message = {
@@ -106,19 +111,27 @@ async function sendNotification(request, reply) {
             correlation_id: correlationId,
         };
 
-        // 5. Call mock publishToQueue function (using actual sendToQueue for now)
-        log.info({ queueName, message: message.correlation_id }, 'Sending message to queue');
-        await sendToQueue(queueName, message);
+        // 5. Publish message to RabbitMQ
+        log.info({ routingKey, message: message.correlation_id }, 'Publishing message to RabbitMQ');
+        const published = await publishToQueue(routingKey, message);
 
-        // 6. Return JSON response with 202 Accepted
-        reply.code(202).send(successResponse(
-            {
-                notification_id: correlationId, // Using correlationId as a temporary notification ID
-                status: 'accepted',
-                queue: queueName
-            },
-            'Notification request accepted and queued for processing.'
-        ));
+        if (published) {
+            // 6. Return JSON response with 202 Accepted
+            reply.code(202).send(successResponse(
+                {
+                    notification_id: correlationId, // Using correlationId as a temporary notification ID
+                    status: 'accepted',
+                    routing_key: routingKey
+                },
+                'Notification request accepted and queued for processing.'
+            ));
+        } else {
+            log.error({ routingKey, message: message.correlation_id }, 'Failed to publish message to RabbitMQ');
+            reply.code(500).send(errorResponse(
+                'Internal Server Error',
+                'Failed to queue notification request.'
+            ));
+        }
 
     } catch (error) {
         log.error({ error, user_id, template_id, notification_type }, 'Error processing notification request');

@@ -1,60 +1,42 @@
-// api_gateway/services/rabbitmq.service.js
-const { initRabbitMQ, publishMessage } = require('../src/utils/publisher');
-const config = require('../config/config');
-const { logger } = require('../middlewares/logger.middleware');
+const amqp = require('amqplib');
+const config = require('../config/config'); // Assuming config.js loads .env variables
 
-let rabbitmqChannel = null;
+let connection = null;
+let channel = null;
+const EXCHANGE_NAME = 'notifications.direct';
 
-async function initializeRabbitMQ() {
-    if (rabbitmqChannel) {
-        return;
-    }
-    // Only connect to RabbitMQ if not in test environment
-    if (process.env.NODE_ENV !== 'test') {
-        const rabbitMQConnection = await initRabbitMQ(config.RABBITMQ_URL);
-        if (rabbitMQConnection) {
-            rabbitmqChannel = rabbitMQConnection.channel;
-        } else {
-            logger.error('Failed to initialize RabbitMQ connection. Publisher will not function.');
-        }
-    } else {
-        logger.info('Skipping RabbitMQ connection in test environment.');
-    }
-}
-
-async function sendToQueue(queueName, message) {
-    if (!rabbitmqChannel && process.env.NODE_ENV !== 'test') {
-        logger.error('RabbitMQ channel not initialized. Attempting to re-initialize...');
-        await initializeRabbitMQ();
-        if (!rabbitmqChannel) {
-            throw new Error('RabbitMQ channel could not be initialized.');
-        }
-    }
-
-    if (process.env.NODE_ENV === 'test') {
-        logger.info(`MOCK: Message sent to queue ${queueName}: ${JSON.stringify(message)}`);
-        return true; // Simulate success in test environment
-    }
-
+const connectRabbitMQ = async () => {
     try {
-        // Ensure the queue exists before publishing
-        await rabbitmqChannel.assertQueue(queueName, { durable: true });
-        const sent = publishMessage(rabbitmqChannel, 'notifications.direct', queueName, message);
-        if (!sent) {
-            logger.error({ queueName, message: message.correlation_id }, 'Message not sent to queue (buffer full)');
-            throw new Error('RabbitMQ buffer full, message not sent.');
-        }
+        // Use the RABBITMQ_URL from config
+        connection = await amqp.connect(config.rabbitmq.url);
+        channel = await connection.createChannel();
+        await channel.assertExchange(EXCHANGE_NAME, 'direct', { durable: true });
+        console.log('Connected to RabbitMQ and asserted exchange.');
+        
+        connection.on('error', (err) => {
+            console.error('RabbitMQ connection error:', err);
+            // Implement reconnection logic here
+            if (connection) {
+                connection.close();
+            }
+            setTimeout(connectRabbitMQ, 5000); // Attempt to reconnect after 5 seconds
+        });
+        connection.on('close', () => {
+            console.warn('RabbitMQ connection closed. Reconnecting...');
+            setTimeout(connectRabbitMQ, 5000); // Attempt to reconnect after 5 seconds
+        });
+        
     } catch (error) {
-        logger.error({ error, queueName, message }, 'Failed to send message to RabbitMQ queue');
-        throw error;
+        console.error('Failed to connect to RabbitMQ:', error);
+        setTimeout(connectRabbitMQ, 5000); // Retry connection after 5 seconds
     }
-}
+};
 
-// Initialize RabbitMQ connection when the service starts
-initializeRabbitMQ().catch(err => {
-    logger.error({ err }, 'Initial RabbitMQ connection failed outside of request context.');
-});
+const getChannel = () => channel;
+const getExchangeName = () => EXCHANGE_NAME;
 
 module.exports = {
-    sendToQueue,
+    connectRabbitMQ,
+    getChannel,
+    getExchangeName,
 };

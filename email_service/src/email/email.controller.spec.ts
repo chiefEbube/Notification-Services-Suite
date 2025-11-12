@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EmailController } from './email.controller';
 import { EmailService } from './email.service';
 import { RmqContext } from '@nestjs/microservices';
+import { EmailJobData } from './interfaces/email.types';
 
 describe('EmailController', () => {
   let controller: EmailController;
@@ -10,10 +11,20 @@ describe('EmailController', () => {
   let mockMessage: any;
   let mockContext: RmqContext;
 
-  const mockJobData = {
-    request_id: 'req-123',
-    user_id: 'user-123',
-    template_code: 'welcome-email',
+  const mockJobData: EmailJobData = {
+    user_id: 123,
+    template_id: 'welcome-email',
+    notification_type: 'email',
+    correlation_id: 'corr-123',
+    user_data: {
+      id: 123,
+      email: 'test@example.com',
+      preferences: {
+        email: true,
+        push: true,
+      },
+    },
+    template_content: 'Hello {{name}}, welcome!',
     variables: {
       name: 'John Doe',
     },
@@ -90,10 +101,20 @@ describe('EmailController', () => {
 
     it('should handle different job data formats', async () => {
       // Arrange
-      const differentJobData = {
-        request_id: 'req-456',
-        user_id: 'user-456',
-        template_code: 'notification-email',
+      const differentJobData: EmailJobData = {
+        user_id: 456,
+        template_id: 'notification-email',
+        notification_type: 'email',
+        correlation_id: 'corr-456',
+        user_data: {
+          id: 456,
+          email: 'another@example.com',
+          preferences: {
+            email: true,
+            push: false,
+          },
+        },
+        template_content: 'Test notification',
         variables: {
           message: 'Test notification',
         },
@@ -137,4 +158,3 @@ describe('EmailController', () => {
     });
   });
 });
-

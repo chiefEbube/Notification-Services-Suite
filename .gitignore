@@ -43,3 +43,7 @@ build/
 *.tmp
 .env
 .DS_Store
+
+# Local Mock Data (add any specific mock files you created here)
+*.mock.js
+*.test.data.js

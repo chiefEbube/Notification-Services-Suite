@@ -1,7 +1,3 @@
--- PostgreSQL initialization SQL
-
-\c notification_db;
-
 CREATE TABLE IF NOT EXISTS templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
@@ -24,7 +20,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create a trigger to use the function
-CREATE TRIGGER update_templates_updated_at
+CREATE OR REPLACE TRIGGER update_templates_updated_at
 BEFORE UPDATE ON templates
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
