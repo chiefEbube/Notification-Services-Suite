@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SendgridModule } from './sendgrid/sendgrid.module';
 import { EmailModule } from './email/email.module';
@@ -15,7 +14,6 @@ import { TerminusModule } from '@nestjs/terminus';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    HttpModule,
     TerminusModule,
     CacheModule.registerAsync({
       isGlobal: true,
