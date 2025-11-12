@@ -6,7 +6,6 @@ import { SendgridService } from '../sendgrid/sendgrid.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { of, throwError } from 'rxjs';
-import * as Handlebars from 'handlebars';
 
 describe('EmailService', () => {
   let service: EmailService;
@@ -23,12 +22,12 @@ describe('EmailService', () => {
     },
   };
 
-  const mockTemplate = '<h1>Hello {{name}}</h1>';
+  const mockTemplate = 'Hello {{name}}, welcome to our service!';
 
   const mockJobData = {
     request_id: 'req-123',
     user_id: 'user-123',
-    template_code: 'welcome-email',
+    template_id: 'welcome-email',
     variables: {
       name: 'John Doe',
     },
@@ -114,7 +113,7 @@ describe('EmailService', () => {
         to: 'test@example.com',
         from: 'noreply@example.com',
         subject: 'Test Email',
-        html: '<h1>Hello John Doe</h1>',
+        html: 'Hello John Doe, welcome to our service!',
       });
     });
 
@@ -149,7 +148,12 @@ describe('EmailService', () => {
 
       const templateResponse = {
         data: {
-          html: mockTemplate,
+          data: {
+            id: 'template-123',
+            name: 'welcome-email',
+            content: mockTemplate,
+            type: 'email',
+          },
         },
       };
 
@@ -205,9 +209,9 @@ describe('EmailService', () => {
       expect(sendgridService.sendEmail).not.toHaveBeenCalled();
     });
 
-    it('should compile handlebars template with variables', async () => {
+    it('should replace template variables with values', async () => {
       // Arrange
-      const templateWithVariables = '<p>Hello {{name}}, welcome to {{platform}}!</p>';
+      const templateWithVariables = 'Hello {{name}}, welcome to {{platform}}!';
       cache.get.mockResolvedValueOnce(mockUser);
       cache.get.mockResolvedValueOnce(templateWithVariables);
 
@@ -225,7 +229,7 @@ describe('EmailService', () => {
       // Assert
       expect(sendgridService.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
-          html: '<p>Hello Jane Doe, welcome to MyApp!</p>',
+          html: 'Hello Jane Doe, welcome to MyApp!',
         }),
       );
     });
@@ -312,7 +316,12 @@ describe('EmailService', () => {
 
       const templateResponse = {
         data: {
-          html: mockTemplate,
+          data: {
+            id: 'template-123',
+            name: 'welcome-email',
+            content: mockTemplate,
+            type: 'email',
+          },
         },
       };
 
