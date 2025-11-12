@@ -4,8 +4,8 @@
 The API Gateway acts as the single entry point for all client requests into the microservices ecosystem. It handles request routing, composition, and protocol translation.
 
 ## The language and framework used
-- **Language**: Go
-- **Framework**: (To be determined, likely a lightweight Go web framework or custom implementation)
+- **Language**: Node.js
+- **Framework**: Fastify
 
 ## The responsibilities of the service
 - **Request Routing**: Directs incoming requests to the appropriate microservice based on predefined rules.
@@ -20,13 +20,15 @@ The API Gateway primarily communicates synchronously via REST. It does not direc
 
 ## The environment variables required (based on .env.example)
 - `PORT`: The port on which the API Gateway will listen (e.g., 8080)
+- `RABBITMQ_URL`: URL for the RabbitMQ server (e.g., `amqp://user:password@rabbitmq:5672`)
 - `USER_SERVICE_URL`: URL for the User Service (e.g., http://user_service:8081)
-- `EMAIL_SERVICE_URL`: URL for the Email Service (e.g., http://email_service:8082)
-- `PUSH_SERVICE_URL`: URL for the Push Service (e.g., http://push_service:8083)
 - `TEMPLATE_SERVICE_URL`: URL for the Template Service (e.g., http://template_service:8084)
 - `JWT_SECRET`: Secret key for JWT token validation.
+- `NOTIFICATION_DB_URL`: Connection string for the Notification Database (e.g., `postgresql://user:password@postgres:5432/notification_db`)
+- `LOG_LEVEL`: Logging level (e.g., `info`, `debug`, `error`)
 
 ## The endpoints the service will expose (just list them, no code)
+- `GET /health`
 - `POST /users`
 - `GET /users/{id}`
 - `PUT /users/{id}`
@@ -46,7 +48,7 @@ The API Gateway communicates with other microservices primarily via **REST APIs*
           v
 +-------------------+
 |    API Gateway    |
-|      (Go)         |
+|    (Node.js)      |
 +---------+---------+
           |
           | HTTP/S
