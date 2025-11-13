@@ -5,15 +5,31 @@ from app.core.config import settings
 
 class RedisClient:
     def __init__(self):
-        self.redis = redis.Redis(
-            host=settings.REDIS_URL,
-            port=settings.REDIS_PORT,
-            db=settings.USER_SERVICE_REDIS_DB,
-            password=settings.REDIS_PASSWORD,
-            decode_responses=True,
-            socket_connect_timeout=10.0,
-            socket_keepalive=True
-                                  )
+        # Parse REDIS_URL if it's a full URL, otherwise use host/port separately
+        if settings.REDIS_URL.startswith('redis://'):
+            # Use from_url to parse the full Redis URL
+            redis_url = settings.REDIS_URL
+            if settings.REDIS_PASSWORD:
+                # Insert password into URL if provided
+                redis_url = redis_url.replace('redis://', f'redis://:{settings.REDIS_PASSWORD}@')
+            self.redis = redis.from_url(
+                redis_url,
+                db=settings.USER_SERVICE_REDIS_DB,
+                decode_responses=True,
+                socket_connect_timeout=10.0,
+                socket_keepalive=True
+            )
+        else:
+            # Use host and port separately if REDIS_URL is just a hostname
+            self.redis = redis.Redis(
+                host=settings.REDIS_URL,
+                port=settings.REDIS_PORT,
+                db=settings.USER_SERVICE_REDIS_DB,
+                password=settings.REDIS_PASSWORD,
+                decode_responses=True,
+                socket_connect_timeout=10.0,
+                socket_keepalive=True
+            )
 
     def get(self, key): 
         #this is to get the user's data from the redis cache if it exists

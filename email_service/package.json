@@ -30,6 +30,7 @@
     "@nestjs/terminus": "^11.0.0",
     "@sendgrid/mail": "^8.1.6",
     "amqplib": "^0.10.9",
+    "amqp-connection-manager": "^4.1.14",
     "axios": "^1.13.2",
     "cache-manager-redis-store": "^3.0.1",
     "opossum": "^9.0.0",

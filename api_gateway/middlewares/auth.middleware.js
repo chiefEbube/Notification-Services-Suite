@@ -8,6 +8,11 @@ async function authMiddleware(fastify, options) {
     fastify.decorateRequest('user', null);
 
     fastify.addHook('preHandler', async (request, reply) => {
+        // Skip authentication for health check endpoint
+        if (request.url === '/health') {
+            return;
+        }
+
         const authHeader = request.headers.authorization;
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {

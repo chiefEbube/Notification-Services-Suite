@@ -19,25 +19,30 @@ export class FcmService implements OnModuleInit {
         this.firebaseApp = admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
         });
-      } else {
-        // Option 2: Using environment variables
-        const projectId = this.configService.getOrThrow<string>('FCM_PROJECT_ID');
-        const privateKey = this.configService.getOrThrow<string>('FCM_PRIVATE_KEY').replace(/\\n/g, '\n');
-        const clientEmail = this.configService.getOrThrow<string>('FCM_CLIENT_EMAIL');
+        this.logger.log('Firebase Admin initialized successfully using service account file');
+        return;
+      }
+      
+      // Option 2: Using environment variables
+      const projectId = this.configService.get<string>('FCM_PROJECT_ID');
+      const privateKey = this.configService.get<string>('FCM_PRIVATE_KEY');
+      const clientEmail = this.configService.get<string>('FCM_CLIENT_EMAIL');
 
+      if (projectId && privateKey && clientEmail) {
         this.firebaseApp = admin.initializeApp({
           credential: admin.credential.cert({
             projectId,
-            privateKey,
+            privateKey: privateKey.replace(/\\n/g, '\n'),
             clientEmail,
           }),
         });
+        this.logger.log('Firebase Admin initialized successfully using environment variables');
+      } else {
+        this.logger.warn('FCM credentials not configured. Push notifications will be disabled. Set FCM_PROJECT_ID, FCM_PRIVATE_KEY, and FCM_CLIENT_EMAIL or FCM_SERVICE_ACCOUNT_PATH to enable.');
       }
-
-      this.logger.log('Firebase Admin initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize Firebase Admin', error);
-      throw error;
+      this.logger.warn('Push notifications will be disabled due to initialization error');
     }
   }
 
@@ -51,6 +56,9 @@ export class FcmService implements OnModuleInit {
       data?: Record<string, string>;
     },
   ): Promise<string> {
+    if (!this.firebaseApp) {
+      throw new Error('Firebase Admin not initialized. Please configure FCM credentials.');
+    }
     try {
       const message: admin.messaging.Message = {
         token,
@@ -97,6 +105,10 @@ export class FcmService implements OnModuleInit {
   }
 
   async validateToken(token: string): Promise<boolean> {
+    if (!this.firebaseApp) {
+      this.logger.warn('Firebase Admin not initialized. Cannot validate token.');
+      return false;
+    }
     try {
       // Use validate-only to check token without sending
       // Note: This is a simplified validation - in production you might want

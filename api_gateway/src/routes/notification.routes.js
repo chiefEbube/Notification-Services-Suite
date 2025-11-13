@@ -7,7 +7,7 @@ async function notificationRoutes(fastify, options) {
             type: 'object',
             required: ['user_id', 'template_id', 'notification_type', 'variables'],
             properties: {
-                user_id: { type: 'number' },
+                user_id: { type: 'string' },
                 template_id: { type: 'string' },
                 notification_type: { type: 'string', enum: ['email', 'push'] },
                 variables: { type: 'object' },
