@@ -1,0 +1,387 @@
+openapi: 3.0.0
+info:
+  title: Template Service
+  version: 1.0.0
+  description: Service for storing, managing, and retrieving notification templates, including variable substitution and version history.
+servers:
+  - url: http://localhost:3001
+    description: Local Development Server
+tags:
+  - name: Templates
+    description: Operations related to managing notification templates.
+  - name: Health
+    description: Health check endpoint for service status.
+components:
+  schemas:
+    TemplateCreateRequest:
+      type: object
+      required:
+        - name
+        - content
+        - type
+      properties:
+        name:
+          type: string
+          description: The name of the template.
+          example: "welcome_email"
+        content:
+          type: string
+          description: The content of the template, possibly with placeholders like {{variable}}.
+          example: "Hello {{name}}, welcome to {{product}}!"
+        language:
+          type: string
+          description: The language of the template. Defaults to 'en'.
+          example: "en"
+        type:
+          type: string
+          description: The type of notification this template is for (e.g., 'email', 'push').
+          example: "email"
+    Template:
+      type: object
+      required:
+        - id
+        - name
+        - content
+        - language
+        - type
+        - version
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique ID of the template.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        name:
+          type: string
+          description: The name of the template.
+          example: "welcome_email"
+        content:
+          type: string
+          description: The content of the template, possibly with substituted variables.
+          example: "Hello John Doe, welcome to Awesome Product!"
+        language:
+          type: string
+          description: The language of the template.
+          example: "en"
+        type:
+          type: string
+          description: The type of notification this template is for.
+          example: "email"
+        version:
+          type: integer
+          description: The version number of the template.
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          description: The timestamp when the template was created.
+          example: "2025-11-13T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: The timestamp when the template was last updated.
+          example: "2025-11-13T10:00:00Z"
+    TemplateUpdateContent:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: The new content for the template.
+          example: "Hi {{name}}, updated welcome message for {{product}}!"
+    GenericSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          nullable: true
+        message:
+          type: string
+          example: "Operation successful."
+        meta:
+          type: object
+          nullable: true
+    GenericErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Internal Server Error"
+        message:
+          type: string
+          example: "Failed to process request."
+        meta:
+          type: object
+          nullable: true
+paths:
+  /templates:
+    post:
+      summary: Create a new template
+      tags:
+        - Templates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreateRequest'
+      responses:
+        '201':
+          description: Template created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccessResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Template'
+        '400':
+          description: Validation Error (e.g., missing required fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+  /templates/{id}:
+    get:
+      summary: Retrieve a template by its ID
+      tags:
+        - Templates
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The unique ID of the template.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        - in: query
+          name: variables
+          schema:
+            type: string
+          required: false
+          description: JSON string of key-value pairs for variable substitution in the template content.
+          example: '{"name": "John Doe", "product": "Awesome Product"}'
+      responses:
+        '200':
+          description: Template retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccessResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Template'
+        '404':
+          description: Template not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+    put:
+      summary: Update a template (creates a new version)
+      tags:
+        - Templates
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The unique ID of the template to update.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateUpdateContent'
+      responses:
+        '200':
+          description: Template updated (new version created) successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccessResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Template'
+        '400':
+          description: Validation Error (e.g., missing content)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '404':
+          description: Original template not found for update.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+    delete:
+      summary: Delete a template by its ID
+      tags:
+        - Templates
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The unique ID of the template to delete.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      responses:
+        '200':
+          description: Template deleted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccessResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        '404':
+          description: Template not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+  /templates/search:
+    get:
+      summary: Search templates by name, language, and type
+      tags:
+        - Templates
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The name of the template to search for.
+          example: "welcome_email"
+        - in: query
+          name: language
+          schema:
+            type: string
+          required: false
+          description: The language of the template. Defaults to 'en'.
+          example: "en"
+        - in: query
+          name: type
+          schema:
+            type: string
+          required: true
+          description: The type of notification (e.g., 'email', 'push').
+          example: "email"
+        - in: query
+          name: variables
+          schema:
+            type: string
+          required: false
+          description: JSON string of key-value pairs for variable substitution in the template content.
+          example: '{"name": "Jane Doe"}'
+      responses:
+        '200':
+          description: Template retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccessResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Template'
+        '400':
+          description: Validation Error (e.g., missing name or type)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '404':
+          description: Template not found for the given criteria.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Template Service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "ok"
+                      database:
+                        type: string
+                        example: "connected"
+                  message:
+                    type: string
+                    example: "Template Service is healthy"
+                  meta:
+                    type: object
+                    nullable: true
+        '500':
+          description: Internal Server Error (e.g., database connection failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'

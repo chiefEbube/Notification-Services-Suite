@@ -1,0 +1,235 @@
+openapi: 3.0.0
+info:
+  title: API Gateway Service
+  version: 1.0.0
+  description: Entry point for all notification requests, handling validation, authentication, routing to message queues, and tracking notification status.
+servers:
+  - url: http://localhost:3000
+    description: Local Development Server
+tags:
+  - name: Notifications
+    description: Operations related to sending and managing notifications.
+  - name: Health
+    description: Health check endpoint for service status.
+components:
+  schemas:
+    NotificationRequest:
+      type: object
+      required:
+        - user_id
+        - template_id
+        - notification_type
+        - variables
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: The ID of the user to send the notification to.
+          example: 123
+        template_id:
+          type: string
+          format: uuid
+          description: The ID of the template to use for the notification.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        notification_type:
+          type: string
+          enum:
+            - email
+            - push
+          description: The type of notification to send.
+          example: "email"
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value pairs for variable substitution in the template.
+          example:
+            name: "John Doe"
+            product: "Awesome Product"
+    NotificationStatusResponse:
+      type: object
+      required:
+        - notification_id
+        - user_id
+        - template_id
+        - notification_type
+        - status
+        - timestamp
+        - details
+      properties:
+        notification_id:
+          type: string
+          format: uuid
+          description: The unique ID of the notification request (correlation ID).
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        user_id:
+          type: integer
+          format: int64
+          description: The ID of the user.
+          example: 123
+        template_id:
+          type: string
+          format: uuid
+          description: The ID of the template used.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        notification_type:
+          type: string
+          enum:
+            - email
+            - push
+          description: The type of notification.
+          example: "email"
+        status:
+          type: string
+          enum:
+            - PENDING
+            - QUEUED
+            - SENT
+            - FAILED
+          description: The current status of the notification.
+          example: "QUEUED"
+        timestamp:
+          type: string
+          format: date-time
+          description: The timestamp when the status was last updated.
+          example: "2025-11-13T10:00:00Z"
+        details:
+          type: string
+          description: Additional details about the notification status.
+          example: "Notification message published to RabbitMQ."
+    GenericSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          nullable: true
+        message:
+          type: string
+          example: "Operation successful."
+        meta:
+          type: object
+          nullable: true
+    GenericErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Internal Server Error"
+        message:
+          type: string
+          example: "Failed to process request."
+        meta:
+          type: object
+          nullable: true
+paths:
+  /notifications/send:
+    post:
+      summary: Send a new notification
+      tags:
+        - Notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '202':
+          description: Notification request accepted and queued for processing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      notification_id:
+                        type: string
+                        format: uuid
+                        example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                      status:
+                        type: string
+                        example: "accepted"
+                      routing_key:
+                        type: string
+                        example: "email"
+                  message:
+                    type: string
+                    example: "Notification request accepted and queued for processing."
+                  meta:
+                    type: object
+                    nullable: true
+        '400':
+          description: Bad Request (e.g., invalid notification_type, missing fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+  /notifications/{notification_id}/status:
+    get:
+      summary: Get notification status by ID
+      tags:
+        - Notifications
+      parameters:
+        - in: path
+          name: notification_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The unique ID of the notification request.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      responses:
+        '200':
+          description: Notification status retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccessResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NotificationStatusResponse'
+        '404':
+          description: Notification status not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericErrorResponse'
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API Gateway is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
