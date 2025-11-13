@@ -1,0 +1,112 @@
+openapi: 3.0.0
+info:
+  title: Push Service
+  version: 1.0.0
+  description: Service for processing push notifications from a message queue and sending them to mobile or web devices.
+servers:
+  - url: http://localhost:3003
+    description: Local Development Server (if applicable for health checks)
+tags:
+  - name: Health
+    description: Health check endpoint for service status.
+  - name: Message Queue
+    description: Message patterns consumed by the Push Service from RabbitMQ.
+components:
+  schemas:
+    PushJobData:
+      type: object
+      required:
+        - user_id
+        - template_id
+        - notification_type
+        - variables
+        - user_data
+        - template_content
+        - correlation_id
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: The ID of the user to send the push notification to.
+          example: 123
+        template_id:
+          type: string
+          format: uuid
+          description: The ID of the template used for the push notification.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        notification_type:
+          type: string
+          enum:
+            - push
+          description: The type of notification, always 'push' for this service.
+          example: "push"
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value pairs for variable substitution in the template.
+          example:
+            name: "John Doe"
+            product: "Awesome Product"
+        user_data:
+          type: object
+          description: User-specific data fetched from the User Service, including device tokens.
+          example:
+            push_token: "some_device_token_123"
+            name: "John Doe"
+        template_content:
+          type: string
+          description: The template content with variables already substituted by the Template Service.
+          example: "Hello John Doe, here's an update from Awesome Product!"
+        correlation_id:
+          type: string
+          format: uuid
+          description: The unique ID for tracking the notification lifecycle.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+    GenericSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          nullable: true
+        message:
+          type: string
+          example: "Operation successful."
+        meta:
+          type: object
+          nullable: true
+    GenericErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Internal Server Error"
+        message:
+          type: string
+          example: "Failed to process request."
+        meta:
+          type: object
+          nullable: true
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Push Service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
