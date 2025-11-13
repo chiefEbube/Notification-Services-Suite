@@ -5,12 +5,11 @@ const successResponse = (data, message = 'Success', meta = {}) => ({
     meta,
 });
 
-const errorResponse = (error, message = 'An error occurred', data = null) => ({
+const errorResponse = (error, message = 'An error occurred', meta = {}) => ({
     success: false,
     error,
     message,
-    data,
-    meta: {},
+    meta,
 });
 
 module.exports = {

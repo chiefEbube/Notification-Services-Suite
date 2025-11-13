@@ -43,7 +43,11 @@ async function sendNotification(request, reply) {
 
         // 3. Fetch template data from Template Service
         log.info({ template_id }, 'Fetching template data');
-        const templateResponse = await fetch(`${config.TEMPLATE_SERVICE_URL}/templates/${template_id}`, {
+        const templateServiceUrl = new URL(`${config.TEMPLATE_SERVICE_URL}/templates/${template_id}`);
+        if (variables && Object.keys(variables).length > 0) {
+            templateServiceUrl.searchParams.append('variables', JSON.stringify(variables));
+        }
+        const templateResponse = await fetch(templateServiceUrl.toString(), {
             headers: { [config.CORRELATION_ID_HEADER]: correlationId }
         });
         if (!templateResponse.ok) {
