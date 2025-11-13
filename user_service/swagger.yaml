@@ -1,0 +1,609 @@
+openapi: 3.0.0
+info:
+  title: User Service
+  version: 1.0.0
+  description: Service for managing user contact information, notification preferences, and authentication.
+servers:
+  - url: http://localhost:8000
+    description: Local Development Server
+tags:
+  - name: Users
+    description: Operations related to user management.
+  - name: Preferences
+    description: Operations related to user notification preferences.
+  - name: Authentication
+    description: Operations related to user authentication and password management.
+  - name: Health
+    description: Health check endpoint for service status.
+components:
+  schemas:
+    UserCreate:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "test@example.com"
+        password:
+          type: string
+          format: password
+          example: "SecurePassword123"
+        first_name:
+          type: string
+          nullable: true
+          example: "John"
+        last_name:
+          type: string
+          nullable: true
+          example: "Doe"
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        email:
+          type: string
+          format: email
+          example: "test@example.com"
+        first_name:
+          type: string
+          nullable: true
+          example: "John"
+        last_name:
+          type: string
+          nullable: true
+          example: "Doe"
+        push_token:
+          type: string
+          nullable: true
+          example: "some_device_token_123"
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-11-13T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-11-13T10:00:00Z"
+    UserUpdate:
+      type: object
+      required:
+        - push_token
+      properties:
+        push_token:
+          type: string
+          description: The new push notification token for the user.
+          example: "new_device_token_456"
+    UserPreference:
+      type: object
+      properties:
+        email_enabled:
+          type: boolean
+          example: true
+        push_enabled:
+          type: boolean
+          example: false
+    UserPreferenceResponse:
+      type: object
+      required:
+        - user_id
+        - email_enabled
+        - push_enabled
+        - created_at
+        - updated_at
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        email_enabled:
+          type: boolean
+          example: true
+        push_enabled:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-11-13T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-11-13T10:00:00Z"
+    PasswordVerify:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "test@example.com"
+        password:
+          type: string
+          format: password
+          example: "SecurePassword123"
+    PasswordUpdate:
+      type: object
+      required:
+        - old_password
+        - new_password
+      properties:
+        old_password:
+          type: string
+          format: password
+          example: "SecurePassword123"
+        new_password:
+          type: string
+          format: password
+          example: "NewSecurePassword456"
+    PaginationMeta:
+      type: object
+      required:
+        - total
+        - limit
+        - page
+        - total_pages
+        - has_next
+        - has_previous
+      properties:
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 10
+        page:
+          type: integer
+          example: 1
+        total_pages:
+          type: integer
+          example: 10
+        has_next:
+          type: boolean
+          example: true
+        has_previous:
+          type: boolean
+          example: false
+    APIResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          nullable: true
+        message:
+          type: string
+          example: "Operation successful."
+        error:
+          type: string
+          nullable: true
+          example: null
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+          nullable: true
+    UserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+paths:
+  /api/v1/users/:
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+  /api/v1/users/{user_id}:
+    get:
+      summary: Get user by ID
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the user to retrieve.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      responses:
+        '200':
+          description: User retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+    delete:
+      summary: Delete a user by ID
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the user to delete.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      responses:
+        '200':
+          description: User deleted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+  /api/v1/users/email/{email}:
+    get:
+      summary: Get user by email address
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: email
+          schema:
+            type: string
+            format: email
+          required: true
+          description: The email address of the user to retrieve.
+          example: "test@example.com"
+      responses:
+        '200':
+          description: User retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+  /api/v1/users/update-push-token/{user_id}:
+    put:
+      summary: Update user's push notification token
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the user to update.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Push token updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+  /api/v1/users/preferences/{user_id}:
+    get:
+      summary: Get user notification preferences
+      tags:
+        - Preferences
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the user to retrieve preferences for.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      responses:
+        '200':
+          description: User preferences retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserPreferenceResponse'
+        '404':
+          description: User preferences not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+    put:
+      summary: Update user notification preferences
+      tags:
+        - Preferences
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the user to update preferences for.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreference'
+      responses:
+        '200':
+          description: User preferences updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserPreferenceResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+  /api/v1/users/verify-password:
+    post:
+      summary: Verify user password
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordVerify'
+      responses:
+        '200':
+          description: Password verified successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation error or incorrect password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+  /api/v1/users/update-password/{user_id}:
+    put:
+      summary: Update user password
+      tags:
+        - Authentication
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the user to update the password for.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordUpdate'
+      responses:
+        '200':
+          description: Password updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation error or old password mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+  /api/v1/users/all/users:
+    get:
+      summary: Get all users with pagination
+      tags:
+        - Users
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          required: false
+          description: The page number for pagination. Defaults to 1.
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          required: false
+          description: The number of items per page. Defaults to 5.
+          example: 10
+      responses:
+        '200':
+          description: Users retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserListResponse'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: User Service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
